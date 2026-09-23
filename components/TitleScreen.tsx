@@ -78,7 +78,7 @@ export default function TitleScreen({ onStart }: { onStart: () => void }) {
 
         <div className="title-fade space-y-1" style={{ animationDelay: "1.3s" }}>
           <p className="text-secondary font-serif text-lg italic">
-            &ldquo;기록은 모든 것을 기억한다.&rdquo;
+            &ldquo;Records remember everything.&rdquo;
           </p>
           <div className="text-[10px] tracking-[0.3em] uppercase text-[#52525b]">
             RECORD STATUS // UNRESOLVED

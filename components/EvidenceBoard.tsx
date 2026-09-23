@@ -4,6 +4,13 @@ import { useState } from "react";
 import type { GameApi } from "@/components/GameShell";
 import { CLUES, ClueId } from "@/lib/gameState";
 import { Panel, Screen, SystemHeader, TerminalButton, Label } from "@/components/ui";
+import { ObjectiveTracker, HintBox } from "@/components/InvestigationAids";
+
+const HINTS = [
+  "먼저 사건 발생 시각과 관련된 단서를 찾아보세요.",
+  "엘리베이터가 어디로 이동했는지 순서대로 연결해보세요.",
+  "시간 → 엘리베이터 → B3 → 미등록 층 순서로 연결하고, 두 번째 인물과 숨겨진 음성은 따로 연결하세요.",
+];
 
 const REQUIRED_PAIRS: [ClueId, ClueId][] = [
   ["TIME", "ELEVATOR"],
@@ -64,6 +71,13 @@ export default function EvidenceBoard({ api }: { api: GameApi }) {
   return (
     <Screen>
       <SystemHeader title="증거 보드" subtitle="사건 재구성" />
+
+      <ObjectiveTracker
+        completed={REQUIRED_PAIRS.filter(([a, b]) =>
+          connections.has(pairKey(a, b))
+        ).map(([a, b]) => `${CLUES[a].label} ↔ ${CLUES[b].label} 연결`)}
+        active={complete ? null : "관련된 기록을 연결하세요."}
+      />
 
       <p className="text-secondary text-sm mb-6">
         지금까지 발견한 단서를 연결하여 사건의 흐름을 재구성하세요.
@@ -128,6 +142,8 @@ export default function EvidenceBoard({ api }: { api: GameApi }) {
           })}
         </div>
       </Panel>
+
+      <HintBox hints={HINTS} solved={complete} />
 
       {complete && (
         <Panel className="p-6 mb-6" border="border-red/50">

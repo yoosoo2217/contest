@@ -4,17 +4,20 @@ import { useEffect, useState } from "react";
 import type { GameApi } from "@/components/GameShell";
 import { ClueId } from "@/lib/gameState";
 import { Panel, Screen, SystemHeader, TerminalButton, Label, ClueTag } from "@/components/ui";
+import { ObjectiveTracker, HintBox } from "@/components/InvestigationAids";
 
 type AreaId = "ELEVATOR" | "HALLWAY" | "EXIT" | "SECOND_FIGURE";
 
 const AREAS: {
   id: AreaId;
   label: string;
+  objectiveLabel: string;
   result: { title: string; lines: string[]; clue?: ClueId };
 }[] = [
   {
     id: "ELEVATOR",
     label: "엘리베이터",
+    objectiveLabel: "엘리베이터 접근 기록 확인",
     result: {
       title: "접근 기록 발견",
       lines: ["시간:", "02:17:03"],
@@ -24,6 +27,7 @@ const AREAS: {
   {
     id: "HALLWAY",
     label: "복도",
+    objectiveLabel: "복도 확인",
     result: {
       title: "특이사항 없음",
       lines: ["특이사항이 없습니다."],
@@ -31,7 +35,8 @@ const AREAS: {
   },
   {
     id: "EXIT",
-    label: "출구",
+    label: "출입문",
+    objectiveLabel: "출입문 확인",
     result: {
       title: "특이사항 없음",
       lines: ["특이사항이 없습니다."],
@@ -40,15 +45,26 @@ const AREAS: {
   {
     id: "SECOND_FIGURE",
     label: "두 번째 인물",
+    objectiveLabel: "두 번째 인물 확인",
     result: {
-      title: "두 번째 인물 감지",
-      lines: ["인원 수:", "2", "공식 기록에는 1명만 존재합니다."],
+      title: "이상 징후 발견",
+      lines: [
+        "인원 수:",
+        "2",
+        "공식 기록에는 존재하지 않는 두 번째 인물이 확인되었습니다.",
+      ],
       clue: "UNKNOWN_FIGURE",
     },
   },
 ];
 
 const TIMESTAMPS = ["02:16:48", "02:17:03", "02:17:18"];
+
+const HINTS = [
+  "각 구역을 순서대로 클릭해 화면을 확인해보세요.",
+  "엘리베이터 쪽 기록에 사건의 마지막 시간이 남아있을 수 있습니다.",
+  "두 번째 인물이 등장하는 구역을 반드시 확인하세요. 공식 기록과 다른 점이 있습니다.",
+];
 
 export default function CctvInvestigation({ api }: { api: GameApi }) {
   const [selected, setSelected] = useState<AreaId | null>(null);
@@ -60,9 +76,7 @@ export default function CctvInvestigation({ api }: { api: GameApi }) {
     return () => clearInterval(id);
   }, []);
 
-  const requiredFound =
-    api.state.foundClues.includes("TIME") &&
-    api.state.foundClues.includes("UNKNOWN_FIGURE");
+  const allInspected = inspected.size === AREAS.length;
 
   function inspect(area: (typeof AREAS)[number]) {
     setSelected(area.id);
@@ -77,6 +91,17 @@ export default function CctvInvestigation({ api }: { api: GameApi }) {
   return (
     <Screen>
       <SystemHeader title="CCTV 조사" subtitle="CAM_02 // 지하 접근 복도" />
+
+      <ObjectiveTracker
+        completed={AREAS.filter((a) => inspected.has(a.id)).map(
+          (a) => a.objectiveLabel
+        )}
+        active={
+          allInspected
+            ? null
+            : "조사 가능한 영역을 모두 확인하세요."
+        }
+      />
 
       <div className="flex items-center justify-between mb-4">
         <Label>기록 로그</Label>
@@ -96,7 +121,10 @@ export default function CctvInvestigation({ api }: { api: GameApi }) {
         </div>
       </div>
 
-      <Panel className="p-3 mb-6">
+      <Panel className="p-3 mb-3">
+        <div className="text-[10px] text-muted tracking-[0.3em] uppercase mb-2 px-1">
+          조사 가능한 영역
+        </div>
         <div className="aspect-video w-full border border-line bg-black relative overflow-hidden grid grid-cols-2 grid-rows-2">
           {AREAS.map((area) => (
             <button
@@ -146,14 +174,16 @@ export default function CctvInvestigation({ api }: { api: GameApi }) {
         )}
       </Panel>
 
-      {!requiredFound && (
+      <HintBox hints={HINTS} solved={allInspected} />
+
+      {!allInspected && (
         <div className="text-xs text-muted tracking-widest uppercase mb-4">
           진행하기에 증거가 부족합니다.
         </div>
       )}
 
       <TerminalButton
-        disabled={!requiredFound}
+        disabled={!allInspected}
         onClick={() => api.setStage("SECURITY_RECORD")}
       >
         다음으로 →

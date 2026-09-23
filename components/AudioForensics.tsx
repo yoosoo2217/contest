@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import type { GameApi } from "@/components/GameShell";
-import { Panel, Screen, SystemHeader, TerminalButton, Label, ClueTag } from "@/components/ui";
+import { Panel, Screen, SystemHeader, TerminalButton, ClueTag } from "@/components/ui";
+import { ObjectiveTracker } from "@/components/InvestigationAids";
 
 const DURATION = 60;
 const TARGET_START = 31;
 const TARGET_END = 34;
-const MAX_SELECTION = 8;
+
+const SEGMENTS = [
+  { key: "s1", label: "00:00 ~ 00:10", start: 0, end: 10, correct: false },
+  { key: "s2", label: "00:20 ~ 00:30", start: 20, end: 30, correct: false },
+  { key: "s3", label: "00:31 ~ 00:34", start: TARGET_START, end: TARGET_END, correct: true },
+] as const;
 
 function barHeight(i: number) {
   const base = Math.abs(Math.sin(i * 0.7) * 0.5 + Math.sin(i * 0.31) * 0.35);
@@ -15,48 +21,18 @@ function barHeight(i: number) {
   return Math.min(1, 0.15 + base + spike);
 }
 
-function formatTime(sec: number) {
-  const m = Math.floor(sec / 60)
-    .toString()
-    .padStart(2, "0");
-  const s = (sec % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
-}
-
 export default function AudioForensics({ api }: { api: GameApi }) {
-  const [start, setStart] = useState<number | null>(null);
-  const [end, setEnd] = useState<number | null>(null);
-  const [analyzed, setAnalyzed] = useState(false);
-  const [invalid, setInvalid] = useState(false);
+  const [selected, setSelected] = useState<(typeof SEGMENTS)[number] | null>(
+    null
+  );
   const [hiddenRevealed, setHiddenRevealed] = useState(
     api.state.foundClues.includes("HIDDEN_VOICE")
   );
 
-  function clickBar(i: number) {
-    setAnalyzed(false);
-    setInvalid(false);
-    if (start === null || (start !== null && end !== null)) {
-      setStart(i);
-      setEnd(null);
-    } else {
-      setEnd(Math.max(i, start));
-      setStart(Math.min(i, start));
-    }
-  }
+  const analyzed = selected?.correct ?? false;
 
-  const hasSelection = start !== null && end !== null;
-
-  function analyze() {
-    if (start === null || end === null) return;
-    const width = end - start;
-    const containsTarget = start <= TARGET_START && end >= TARGET_END - 1;
-    if (containsTarget && width <= MAX_SELECTION) {
-      setAnalyzed(true);
-      setInvalid(false);
-    } else {
-      setAnalyzed(false);
-      setInvalid(true);
-    }
+  function selectSegment(segment: (typeof SEGMENTS)[number]) {
+    setSelected(segment);
   }
 
   function isolateHiddenLayer() {
@@ -68,22 +44,23 @@ export default function AudioForensics({ api }: { api: GameApi }) {
     <Screen>
       <SystemHeader title="음성 분석" subtitle="AUDIO_06 // 파형 분석" />
 
+      <ObjectiveTracker
+        completed={analyzed ? ["이상 신호 구간 확인"] : []}
+        active={analyzed ? null : "오디오 파형에서 의심스러운 구간을 조사하세요."}
+      />
+
       <Panel className="p-5 mb-3">
         <div className="flex h-32 items-end gap-[2px]">
           {Array.from({ length: DURATION }, (_, i) => {
             const inSelection =
-              start !== null && end !== null && i >= start && i <= end;
+              selected !== null && i >= selected.start && i < selected.end;
             return (
-              <button
+              <div
                 key={i}
-                onClick={() => clickBar(i)}
                 style={{ height: `${barHeight(i) * 100}%` }}
                 className={`flex-1 min-w-[2px] transition-colors ${
-                  inSelection
-                    ? "bg-red-bright"
-                    : "bg-secondary/40 hover:bg-secondary/70"
+                  inSelection ? "bg-red-bright" : "bg-secondary/40"
                 }`}
-                aria-label={`select ${formatTime(i)}`}
               />
             );
           })}
@@ -97,34 +74,31 @@ export default function AudioForensics({ api }: { api: GameApi }) {
         </div>
       </Panel>
 
-      <div className="flex items-center justify-between mb-6 text-sm">
-        <Label>
-          {hasSelection
-            ? `선택 구간: ${formatTime(start!)} - ${formatTime(end! + 1)}`
-            : "시작 지점과 끝 지점을 순서대로 클릭하세요."}
-        </Label>
-        <div className="flex gap-3">
-          <TerminalButton
-            variant="ghost"
-            onClick={() => {
-              setStart(null);
-              setEnd(null);
-              setAnalyzed(false);
-              setInvalid(false);
-            }}
-          >
-            초기화
-          </TerminalButton>
-          <TerminalButton disabled={!hasSelection} onClick={analyze}>
-            분석하기
-          </TerminalButton>
+      <div className="mb-6 space-y-2">
+        <div className="text-[10px] tracking-[0.3em] uppercase text-muted">
+          조사 구간 선택
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {SEGMENTS.map((segment) => (
+            <button
+              key={segment.key}
+              onClick={() => selectSegment(segment)}
+              className={`border px-4 py-3 text-sm tracking-widest transition-colors ${
+                selected?.key === segment.key
+                  ? "border-red-bright text-red-bright bg-red/10"
+                  : "border-line text-secondary hover:border-secondary"
+              }`}
+            >
+              [ {segment.label} ]
+            </button>
+          ))}
         </div>
       </div>
 
-      {invalid && !analyzed && (
+      {selected && !analyzed && (
         <Panel className="p-5 mb-6">
           <div className="text-muted text-sm tracking-widest uppercase">
-            이 구간에서는 신호가 감지되지 않았습니다.
+            이 구간에서는 특별한 신호가 없습니다.
           </div>
         </Panel>
       )}
@@ -132,11 +106,25 @@ export default function AudioForensics({ api }: { api: GameApi }) {
       {analyzed && (
         <Panel className="p-6 mb-6 space-y-4">
           <div className="text-red-bright text-sm tracking-widest uppercase">
-            음성 감지
+            AUDIO_06 — 분석 결과
           </div>
-          <div className="space-y-2 font-serif text-ink text-lg">
-            <p>&ldquo;이곳은 거기가 아니에요.&rdquo;</p>
-            <p>&ldquo;아직 나를 찾으러 오지 마.&rdquo;</p>
+          <div className="space-y-3 text-lg">
+            <div>
+              <div className="text-muted text-[10px] tracking-[0.3em] uppercase mb-1">
+                정상 음성
+              </div>
+              <p className="font-serif text-ink">
+                &ldquo;이곳은 거기가 아니에요.&rdquo;
+              </p>
+            </div>
+            <div>
+              <div className="text-muted text-[10px] tracking-[0.3em] uppercase mb-1">
+                정상 음성
+              </div>
+              <p className="font-serif text-ink">
+                &ldquo;아직 나를 찾으러 오지 마.&rdquo;
+              </p>
+            </div>
           </div>
 
           {!hiddenRevealed ? (
@@ -144,14 +132,19 @@ export default function AudioForensics({ api }: { api: GameApi }) {
               배경음 분리
             </TerminalButton>
           ) : (
-            <div className="border-t border-line pt-4 space-y-2">
-              <div className="text-muted text-xs tracking-widest uppercase">
-                숨겨진 음성 — 낮은 음량
+            <div className="border-t border-line pt-4 space-y-3">
+              <div>
+                <div className="text-muted text-[10px] tracking-[0.3em] uppercase mb-1">
+                  숨겨진 음성 — 낮은 음량
+                </div>
+                <p className="font-serif text-red-bright text-lg">
+                  &ldquo;이미 찾았잖아.&rdquo;
+                </p>
               </div>
-              <p className="font-serif text-red-bright text-lg">
-                &ldquo;이미 찾았잖아.&rdquo;
-              </p>
               <ClueTag label="단서 획득: 숨겨진 음성" />
+              <div className="text-secondary text-xs tracking-wide pt-1">
+                ▸ 음성의 발화자는 조사관의 존재를 알고 있었던 것으로 보입니다.
+              </div>
             </div>
           )}
         </Panel>
