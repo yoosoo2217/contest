@@ -10,6 +10,7 @@ import {
   loadGameState,
   saveGameState,
 } from "@/lib/gameState";
+import TitleScreen from "@/components/TitleScreen";
 import PlayerIdentification from "@/components/PlayerIdentification";
 import CaseFile from "@/components/CaseFile";
 import CctvInvestigation from "@/components/CctvInvestigation";
@@ -32,6 +33,9 @@ export interface GameApi {
 export default function GameShell() {
   const [state, setState] = useState<GameState>(initialGameState);
   const [hydrated, setHydrated] = useState(false);
+  // Session-only gate, intentionally not persisted: every fresh visit to "/"
+  // must show the title screen first, regardless of saved game progress.
+  const [titleAcknowledged, setTitleAcknowledged] = useState(false);
 
   useEffect(() => {
     // Reading localStorage must happen post-mount to avoid a server/client
@@ -63,6 +67,10 @@ export default function GameShell() {
       setState(initialGameState);
     },
   };
+
+  if (!titleAcknowledged) {
+    return <TitleScreen onStart={() => setTitleAcknowledged(true)} />;
+  }
 
   switch (state.currentStage) {
     case "IDENTIFICATION":
