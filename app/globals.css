@@ -157,6 +157,13 @@ body {
   animation: title-fade-in 900ms ease-out forwards;
 }
 
+/* Reused for staged "record" reveals elsewhere (e.g. ending screens):
+   entries appear one at a time instead of all at once, no looping. */
+.record-reveal {
+  opacity: 0;
+  animation: title-fade-in 500ms ease-out forwards;
+}
+
 /* Very subtle static chromatic offset, no motion */
 .title-crt-text {
   text-shadow:

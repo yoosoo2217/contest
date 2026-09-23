@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { GameApi } from "@/components/GameShell";
 import { ClueId } from "@/lib/gameState";
 import { Panel, Screen, SystemHeader, TerminalButton, Label, ClueTag } from "@/components/ui";
@@ -12,12 +12,14 @@ const AREAS: {
   id: AreaId;
   label: string;
   objectiveLabel: string;
+  timestampIndex: number;
   result: { title: string; lines: string[]; clue?: ClueId };
 }[] = [
   {
     id: "ELEVATOR",
     label: "엘리베이터",
     objectiveLabel: "엘리베이터 접근 기록 확인",
+    timestampIndex: 1,
     result: {
       title: "접근 기록 발견",
       lines: ["시간:", "02:17:03"],
@@ -28,6 +30,7 @@ const AREAS: {
     id: "HALLWAY",
     label: "복도",
     objectiveLabel: "복도 확인",
+    timestampIndex: 0,
     result: {
       title: "특이사항 없음",
       lines: ["특이사항이 없습니다."],
@@ -37,6 +40,7 @@ const AREAS: {
     id: "EXIT",
     label: "출입문",
     objectiveLabel: "출입문 확인",
+    timestampIndex: 2,
     result: {
       title: "특이사항 없음",
       lines: ["특이사항이 없습니다."],
@@ -46,6 +50,7 @@ const AREAS: {
     id: "SECOND_FIGURE",
     label: "두 번째 인물",
     objectiveLabel: "두 번째 인물 확인",
+    timestampIndex: 1,
     result: {
       title: "이상 징후 발견",
       lines: [
@@ -69,14 +74,10 @@ const HINTS = [
 export default function CctvInvestigation({ api }: { api: GameApi }) {
   const [selected, setSelected] = useState<AreaId | null>(null);
   const [inspected, setInspected] = useState<Set<AreaId>>(new Set());
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 2500);
-    return () => clearInterval(id);
-  }, []);
 
   const allInspected = inspected.size === AREAS.length;
+  const activeArea = AREAS.find((a) => a.id === selected);
+  const litTimestampIndex = activeArea?.timestampIndex ?? null;
 
   function inspect(area: (typeof AREAS)[number]) {
     setSelected(area.id);
@@ -86,7 +87,7 @@ export default function CctvInvestigation({ api }: { api: GameApi }) {
     }
   }
 
-  const activeResult = AREAS.find((a) => a.id === selected)?.result;
+  const activeResult = activeArea?.result;
 
   return (
     <Screen>
@@ -110,9 +111,7 @@ export default function CctvInvestigation({ api }: { api: GameApi }) {
             <span
               key={t}
               className={
-                i === tick % TIMESTAMPS.length
-                  ? "text-red-bright"
-                  : "text-muted"
+                i === litTimestampIndex ? "text-red-bright" : "text-muted"
               }
             >
               {t}
