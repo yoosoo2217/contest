@@ -2,6 +2,7 @@
 
 import type { GameApi } from "@/components/GameShell";
 import { Panel, Screen, SystemHeader, TerminalButton, Label } from "@/components/ui";
+import MissingPersonsSection from "@/components/MissingPersonsSection";
 
 export default function Ending({ api }: { api: GameApi }) {
   const { ending, investigatorName } = api.state;
@@ -78,6 +79,8 @@ export default function Ending({ api }: { api: GameApi }) {
           조사 다시 시작
         </TerminalButton>
       </div>
+
+      <MissingPersonsSection />
     </Screen>
   );
 }
