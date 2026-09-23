@@ -139,3 +139,57 @@ body {
   background: var(--color-red);
   color: var(--color-ink);
 }
+
+/* Title screen: staged, one-shot fade-in (no looping effects) */
+@keyframes title-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.title-fade {
+  opacity: 0;
+  animation: title-fade-in 900ms ease-out forwards;
+}
+
+/* Very subtle static chromatic offset, no motion */
+.title-crt-text {
+  text-shadow:
+    1px 0 rgba(150, 45, 45, 0.35),
+    -1px 0 rgba(228, 228, 231, 0.12);
+}
+
+/* One-shot scanline sweep across the title, plays once then stays gone */
+@keyframes title-scanline-sweep {
+  0% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(48px);
+    opacity: 0;
+  }
+}
+
+.title-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(228, 228, 231, 0.45),
+    transparent
+  );
+  animation: title-scanline-sweep 1.8s ease-in-out 1.1s 1 both;
+}
