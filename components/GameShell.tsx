@@ -1,15 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  ClueId,
-  GameState,
-  Stage,
-  clearGameState,
-  initialGameState,
-  loadGameState,
-  saveGameState,
-} from "@/lib/gameState";
+import { useState } from "react";
+import { ClueId, GameState, Stage, initialGameState } from "@/lib/gameState";
 import TitleScreen from "@/components/TitleScreen";
 import PlayerIdentification from "@/components/PlayerIdentification";
 import CaseFile from "@/components/CaseFile";
@@ -21,6 +13,8 @@ import EvidenceBoard from "@/components/EvidenceBoard";
 import HorrorEvent from "@/components/HorrorEvent";
 import FinalDecision from "@/components/FinalDecision";
 import Ending from "@/components/Ending";
+import Epilogue from "@/components/Epilogue";
+import MissingPersonsSection from "@/components/MissingPersonsSection";
 
 export interface GameApi {
   state: GameState;
@@ -28,29 +22,15 @@ export interface GameApi {
   addClue: (id: ClueId) => void;
   update: (partial: Partial<GameState>) => void;
   resetGame: () => void;
+  returnToTitle: () => void;
 }
 
 export default function GameShell() {
+  // Game state is intentionally session-only (in-memory), never persisted
+  // to localStorage: a page refresh must always land back on the title
+  // screen with a clean slate, from any stage.
   const [state, setState] = useState<GameState>(initialGameState);
-  const [hydrated, setHydrated] = useState(false);
-  // Session-only gate, intentionally not persisted: every fresh visit to "/"
-  // must show the title screen first, regardless of saved game progress.
   const [titleAcknowledged, setTitleAcknowledged] = useState(false);
-
-  useEffect(() => {
-    // Reading localStorage must happen post-mount to avoid a server/client
-    // hydration mismatch, so this legitimately syncs from an external store.
-    // Both updates are batched into one re-render, so the save effect below
-    // never observes "hydrated" without the loaded state that goes with it.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState(loadGameState());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveGameState(state);
-  }, [state, hydrated]);
 
   const api: GameApi = {
     state,
@@ -62,9 +42,10 @@ export default function GameShell() {
           : { ...s, foundClues: [...s.foundClues, id] }
       ),
     update: (partial) => setState((s) => ({ ...s, ...partial })),
-    resetGame: () => {
-      clearGameState();
+    resetGame: () => setState(initialGameState),
+    returnToTitle: () => {
       setState(initialGameState);
+      setTitleAcknowledged(false);
     },
   };
 
@@ -93,6 +74,10 @@ export default function GameShell() {
       return <FinalDecision api={api} />;
     case "ENDING":
       return <Ending api={api} />;
+    case "EPILOGUE":
+      return <Epilogue api={api} />;
+    case "MISSING_PERSONS":
+      return <MissingPersonsSection />;
     default:
       return <PlayerIdentification api={api} />;
   }

@@ -8,7 +8,9 @@ export type Stage =
   | "EVIDENCE_BOARD"
   | "HORROR"
   | "FINAL_DECISION"
-  | "ENDING";
+  | "ENDING"
+  | "EPILOGUE"
+  | "MISSING_PERSONS";
 
 export const STAGE_ORDER: Stage[] = [
   "IDENTIFICATION",
@@ -21,6 +23,8 @@ export const STAGE_ORDER: Stage[] = [
   "HORROR",
   "FINAL_DECISION",
   "ENDING",
+  "EPILOGUE",
+  "MISSING_PERSONS",
 ];
 
 export type ClueId =
@@ -57,8 +61,6 @@ export interface GameState {
   ending: Ending;
 }
 
-export const STORAGE_KEY = "last-record-game";
-
 export const initialGameState: GameState = {
   investigatorName: "",
   currentStage: "IDENTIFICATION",
@@ -69,33 +71,3 @@ export const initialGameState: GameState = {
   finalChoice: null,
   ending: null,
 };
-
-export function loadGameState(): GameState {
-  if (typeof window === "undefined") return initialGameState;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialGameState;
-    const parsed = JSON.parse(raw);
-    return { ...initialGameState, ...parsed };
-  } catch {
-    return initialGameState;
-  }
-}
-
-export function saveGameState(state: GameState) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // storage unavailable, ignore
-  }
-}
-
-export function clearGameState() {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // storage unavailable, ignore
-  }
-}
