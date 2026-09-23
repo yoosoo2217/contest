@@ -59,7 +59,7 @@ export default function MissingPersonsSection() {
   }, [fetchRecords]);
 
   return (
-    <section className="mt-16 rounded bg-[#FAFAFA] text-neutral-900 px-4 sm:px-8 py-10">
+    <section className="min-h-screen w-full bg-[#FAFAFA] text-neutral-900 px-4 sm:px-8 py-16 sm:py-20">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8">
           <div className="text-[11px] tracking-[0.3em] uppercase text-neutral-500">
@@ -68,9 +68,10 @@ export default function MissingPersonsSection() {
           <h2 className="mt-2 text-xl font-semibold tracking-wide text-neutral-900">
             실제 실종자 정보
           </h2>
-          <p className="mt-2 text-sm text-neutral-600 leading-relaxed">
-            아래 정보는 게임 속 이야기와 무관한 실제 실종자 정보이며, 경찰청 안전Dream이 제공하는
-            공개 데이터를 실시간으로 가져온 것입니다.
+          <p className="mt-3 text-sm text-neutral-600 leading-relaxed">
+            이 페이지의 정보는 게임 속 이야기와 무관한 실제 실종자 정보입니다.
+            <br />
+            경찰청 안전Dream에서 제공하는 공개 데이터를 불러옵니다.
           </p>
         </div>
 
